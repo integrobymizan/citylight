@@ -2,11 +2,13 @@
 window.SHOP = {
   name: "সিটি লাইটিং অ্যান্ড ইলেকট্রিক",
   nameEn: "City Lighting & Electric",
-  tagline: "লাইট, ফ্যান, সুইচ, ক্যাবল ও সব ধরনের ইলেকট্রিক্যাল পণ্য — সারা বাংলাদেশে হোম ডেলিভারি",
-  phone: "০১৭০০-০০০০০০",
-  email: "support@citylight.com.bd",
-  address: "বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা ১২০৫",
-  hours: "প্রতিদিন সকাল ১০টা – রাত ১০টা",
+  tagline: "মানসম্মত লাইটিং ও ইলেকট্রিক্যাল পণ্যের বিশ্বস্ত ঠিকানা — বাসাবাড়ি ও কমার্শিয়াল সলিউশন, সাশ্রয়ী দামে",
+  phone: "০১৮৭১-৯৫৪৬০৬",
+  email: "citylighte@gmail.com",
+  // ঠিকানা ও খোলার সময় ফাঁকা থাকলে সাইটে দেখানো হয় না
+  address: "",
+  hours: "",
+  facebook: "https://www.facebook.com/profile.php?id=61577465970892",
   // নিজের লোগো ব্যবহার করতে ফাইলটি assets/img/logo.png এ রেখে নিচে "assets/img/logo.png" লিখুন
   logo: "",
 
@@ -22,11 +24,12 @@ window.SHOP = {
   delivery: { insideDhaka: 60, outsideDhaka: 120, freeAbove: 3000 },
 
   // পেমেন্ট মাধ্যম; number থাকলে কাস্টমারকে Send Money নম্বর ও TrxID দিতে হবে
+  // number ফাঁকা ("") রাখলে সেই মাধ্যমটি সাইটে দেখানো হয় না
   payments: [
     { id: "cod", name: "ক্যাশ অন ডেলিভারি", note: "পণ্য হাতে পেয়ে টাকা দিন" },
-    { id: "bkash", name: "বিকাশ", number: "০১৭০০-০০০০০০", note: "Send Money করে TrxID দিন" },
-    { id: "nagad", name: "নগদ", number: "০১৭০০-০০০০০০", note: "Send Money করে TrxID দিন" },
-    { id: "rocket", name: "রকেট", number: "০১৭০০-০০০০০০", note: "Send Money করে TrxID দিন" }
+    { id: "bkash", name: "বিকাশ", number: "", note: "Send Money করে TrxID দিন" },
+    { id: "nagad", name: "নগদ", number: "", note: "Send Money করে TrxID দিন" },
+    { id: "rocket", name: "রকেট", number: "", note: "Send Money করে TrxID দিন" }
   ],
 
   // কুপন কোড: type "percent" অথবা "flat"
@@ -36,7 +39,6 @@ window.SHOP = {
   },
 
   // অ্যাডমিন প্যানেলের পিন (ডেমো) — লাইভ সাইটে অবশ্যই সার্ভার-সাইড লগইন ব্যবহার করুন
-  adminPin: "1234",
+  adminPin: "1234"
 
-  social: { facebook: "#", youtube: "#", instagram: "#" }
 };

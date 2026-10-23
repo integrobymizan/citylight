@@ -3,6 +3,8 @@
   const S = window.SHOP;
   const { bn, money, toEnDigits, fmtDate } = Store;
   const app = document.getElementById("app");
+  // নম্বর ছাড়া মোবাইল ব্যাংকিং মাধ্যম বাদ দেওয়া হয়
+  const PAYMENTS = S.payments.filter(m => m.number !== "");
   let adminUnlocked = false;
 
   // ---------- সাহায্যকারী ফাংশন ----------
@@ -85,7 +87,7 @@
     const popular = all.filter(p => p.stock > 0).slice().sort((a, b) => b.reviews - a.reviews).slice(0, 8);
     return '<section class="hero">' +
         "<div>" +
-          '<h1>আপনার ঘর আলোকিত করুন <span class="hl">সঠিক দামে</span></h1>' +
+          '<h1>মানসম্মত লাইট ও ইলেকট্রিক পণ্য <span class="hl">সাশ্রয়ী দামে</span></h1>' +
           "<p>" + esc(S.tagline) + "</p>" +
           '<div class="hero-tags"><span>⚡ ইনস্টলেশন</span><span>🔧 রিপেয়ার</span><span>☀️ এনার্জি সলিউশন</span></div>' +
           '<div class="hero-actions"><a class="btn btn-yellow" href="#/shop">এখনই কিনুন →</a><a class="btn btn-outline" href="#/services">ইলেকট্রিশিয়ান বুক করুন</a></div>' +
@@ -95,8 +97,8 @@
       '<section class="perks">' +
         '<div class="perk"><span class="ico">🚚</span><div><b>সারা দেশে ডেলিভারি</b><small>' + money(S.delivery.freeAbove) + "+ অর্ডারে ফ্রি</small></div></div>" +
         '<div class="perk"><span class="ico">💵</span><div><b>ক্যাশ অন ডেলিভারি</b><small>পণ্য হাতে পেয়ে টাকা দিন</small></div></div>' +
-        '<div class="perk"><span class="ico">🛡️</span><div><b>অরিজিনাল পণ্য</b><small>ওয়ারেন্টি সহ</small></div></div>' +
-        '<div class="perk"><span class="ico">👷</span><div><b>দক্ষ ইলেকট্রিশিয়ান</b><small>ঘরে এসে কাজ করে দেবে</small></div></div>' +
+        '<div class="perk"><span class="ico">🛡️</span><div><b>মানসম্মত পণ্য</b><small>সাশ্রয়ী দাম, ওয়ারেন্টি সহ</small></div></div>' +
+        '<div class="perk"><span class="ico">🏢</span><div><b>হোম ও কমার্শিয়াল</b><small>বাসা, অফিস ও দোকানের সমাধান</small></div></div>' +
       "</section>" +
       '<section class="section"><div class="section-head"><h2>ক্যাটাগরি</h2><a href="#/shop">সব দেখুন →</a></div>' +
         '<div class="cat-grid">' + CATEGORIES.map(c => '<a class="cat-tile" href="#/shop?cat=' + c.id + '"><div class="ico">' + c.icon + "</div><span>" + esc(c.name) + "</span></a>").join("") + "</div>" +
@@ -211,7 +213,7 @@
               '<button class="btn btn-yellow" id="buyBtn">⚡ এখনই কিনুন</button>' +
             "</div>" : '<div class="pd-actions"><a class="btn btn-outline" href="tel:' + toEnDigits(S.phone).replace(/\D/g, "") + '">📞 স্টক জানতে কল করুন</a></div>') +
           '<button class="btn btn-outline btn-sm" data-wish="' + esc(p.id) + '">' + (wished ? "♥ উইশলিস্টে আছে" : "♡ উইশলিস্টে রাখুন") + "</button>" +
-          '<div class="info-strip"><div>🚚 ঢাকায় ১-২ দিনে<br>ঢাকার বাইরে ২-৪ দিনে</div><div>💵 ক্যাশ অন ডেলিভারি<br>বিকাশ/নগদ/রকেট</div><div>🔁 ৭ দিনের<br>সহজ রিটার্ন</div></div>' +
+          '<div class="info-strip"><div>🚚 ঢাকায় ১-২ দিনে<br>ঢাকার বাইরে ২-৪ দিনে</div><div>💵 ক্যাশ অন ডেলিভারি<br>' + (PAYMENTS.length > 1 ? esc(PAYMENTS.slice(1).map(m => m.name).join("/")) : "পণ্য দেখে টাকা দিন") + '</div><div>🔁 ৭ দিনের<br>সহজ রিটার্ন</div></div>' +
         "</div>" +
       "</div>" +
       '<div class="card section">' +
@@ -295,7 +297,7 @@
     const t = Store.totals(district, Store.load("coupon", ""));
     if (!t.lines.length) return '<div class="card empty"><div class="big">🛒</div><h2>চেকআউট করার মতো কিছু নেই</h2><a class="btn btn-primary" href="#/shop">কেনাকাটা করুন</a></div>';
     const v = k => esc(draft[k] != null ? draft[k] : user[k] || "");
-    const pay = draft.payment || "cod";
+    const pay = PAYMENTS.some(m => m.id === draft.payment) ? draft.payment : PAYMENTS[0].id;
     const fld = (name, label, input, err) => '<div class="field" data-f="' + name + '"><label for="f_' + name + '">' + label + "</label>" + input + '<div class="error">' + err + "</div></div>";
     return '<div class="breadcrumb"><a href="#/cart">কার্ট</a> / চেকআউট</div><h1 class="page-title">চেকআউট</h1>' +
       '<form id="checkoutForm" novalidate><div class="cart-layout"><div>' +
@@ -312,7 +314,7 @@
           fld("note", "অর্ডার নোট (ঐচ্ছিক)", '<input id="f_note" name="note" type="text" value="' + v("note") + '" placeholder="যেমন: অফিস সময়ে ডেলিভারি দিন">', "") +
         "</div>" +
         '<div class="card section" style="margin-top:20px"><h3>💳 পেমেন্ট পদ্ধতি</h3><div class="pay-options">' +
-          S.payments.map(m => '<label class="pay-option"><input type="radio" name="payment" value="' + m.id + '"' + (pay === m.id ? " checked" : "") + "><span><b>" + esc(m.name) + "</b><small class=\"muted\">" + esc(m.note) + "</small></span></label>").join("") +
+          PAYMENTS.map(m => '<label class="pay-option"><input type="radio" name="payment" value="' + m.id + '"' + (pay === m.id ? " checked" : "") + "><span><b>" + esc(m.name) + "</b><small class=\"muted\">" + esc(m.note) + "</small></span></label>").join("") +
         "</div>" +
         '<div class="trx-box" id="trxBox"><p style="margin-top:0">নিচের নম্বরে <b id="payTotal">' + money(t.total) + '</b> <b>Send Money</b> করুন: <b id="payNumber"></b></p>' +
           fld("trxId", "ট্রানজেকশন আইডি (TrxID) *", '<input id="f_trxId" name="trxId" type="text" value="' + v("trxId") + '" placeholder="যেমন: 8N7A6B5C4D">', "ট্রানজেকশন আইডি দিন") +
@@ -336,7 +338,7 @@
       $("#delivLine").textContent = t.delivery ? money(t.delivery) : "ফ্রি";
       $("#totalLine").textContent = money(t.total);
       $("#payTotal").textContent = money(t.total);
-      const m = S.payments.find(x => x.id === fd.get("payment"));
+      const m = PAYMENTS.find(x => x.id === fd.get("payment"));
       $("#trxBox").classList.toggle("show", !!(m && m.number));
       if (m && m.number) $("#payNumber").textContent = m.number + " (" + m.name + " পার্সোনাল)";
     };
@@ -346,7 +348,7 @@
     form.addEventListener("submit", e => {
       e.preventDefault();
       const fd = Object.fromEntries(new FormData(form));
-      const m = S.payments.find(x => x.id === fd.payment);
+      const m = PAYMENTS.find(x => x.id === fd.payment);
       const checks = {
         name: fd.name.trim().length >= 2,
         phone: validPhone(fd.phone),
@@ -437,7 +439,7 @@
         '<a class="btn btn-yellow" href="tel:' + toEnDigits(S.phone).replace(/\D/g, "") + '">📞 ' + esc(S.phone) + "</a></section>" +
       '<section class="section svc-grid">' + S.services.map(s => '<div class="svc"><div class="ico">' + s.icon + "</div><h3>" + esc(s.name) + '</h3><div class="from">' + esc(s.price) + '</div><p class="muted">' + esc(s.desc) + "</p></div>").join("") + "</section>" +
       '<section class="section two-col">' +
-        '<div class="card"><h2>সার্ভিস বুক করুন</h2><p class="muted">ফর্ম পূরণ করুন, ৩০ মিনিটের মধ্যে আমরা কল করে সময় নিশ্চিত করব।</p>' +
+        '<div class="card"><h2>সার্ভিস বুক করুন</h2><p class="muted">ফর্ম পূরণ করুন, আমরা কল করে সময় নিশ্চিত করব।</p>' +
           '<form id="bookForm" novalidate>' +
             '<div class="field"><label for="b_service">সার্ভিস *</label><select id="b_service" name="service">' + S.services.map(s => '<option value="' + s.id + '"' + (pre === s.id ? " selected" : "") + ">" + esc(s.name) + "</option>").join("") + "</select></div>" +
             '<div class="row2"><div class="field" data-f="name"><label for="b_name">নাম *</label><input id="b_name" name="name" type="text"><div class="error">নাম লিখুন</div></div>' +
@@ -449,7 +451,7 @@
             '<button class="btn btn-yellow btn-block">✔ বুকিং কনফার্ম করুন</button>' +
           "</form><div id=\"bookResult\"></div></div>" +
         '<div class="card"><h2>কেন আমাদের বেছে নেবেন?</h2><ul class="features" style="gap:12px">' +
-          "<li>১০+ বছরের অভিজ্ঞ ইলেকট্রিশিয়ান টিম</li><li>কাজ শুরুর আগেই চার্জ জানিয়ে দেওয়া হয়</li><li>কাজের পর পেমেন্ট — ক্যাশ, বিকাশ বা নগদ</li><li>সব কাজে ৩০ দিনের সার্ভিস ওয়ারেন্টি</li><li>আমাদের দোকান থেকে কেনা পণ্যে ইনস্টলেশন চার্জে ছাড়</li><li>বাসা, অফিস, দোকান ও কারখানা — সব ধরনের কাজ</li>" +
+          "<li>অভিজ্ঞ ইলেকট্রিশিয়ান টিম</li><li>কাজ শুরুর আগেই চার্জ জানিয়ে দেওয়া হয়</li><li>কাজ শেষে পেমেন্ট</li><li>আমাদের দোকান থেকে কেনা পণ্যে ইনস্টলেশন চার্জে ছাড়</li><li>বাসা, অফিস, দোকান ও কারখানা — সব ধরনের কাজ</li>" +
         "</ul></div>" +
       "</section>";
   };
@@ -470,8 +472,9 @@
 
   views.contact = function () {
     return '<h1 class="page-title">যোগাযোগ করুন</h1><div class="two-col">' +
-      '<div class="card"><h3>' + esc(S.name) + '</h3><p>📍 ' + esc(S.address) + "</p><p>📞 <a href=\"tel:" + toEnDigits(S.phone).replace(/\D/g, "") + '">' + esc(S.phone) + "</a></p><p>✉️ <a href=\"mailto:" + esc(S.email) + '">' + esc(S.email) + "</a></p><p>🕙 " + esc(S.hours) + "</p>" +
-        '<p class="muted">শোরুমে এসে সরাসরি পণ্য দেখে কিনতে পারেন। পাইকারি ও কন্ট্রাক্টর অর্ডারের জন্য বিশেষ মূল্য দেওয়া হয়।</p></div>' +
+      '<div class="card"><h3>' + esc(S.name) + "</h3>" + (S.address ? "<p>📍 " + esc(S.address) + "</p>" : "") + "<p>📞 <a href=\"tel:" + toEnDigits(S.phone).replace(/\D/g, "") + '">' + esc(S.phone) + "</a></p><p>✉️ <a href=\"mailto:" + esc(S.email) + '">' + esc(S.email) + "</a></p>" + (S.hours ? "<p>🕙 " + esc(S.hours) + "</p>" : "") +
+        (S.facebook ? '<p>📘 <a href="' + esc(S.facebook) + '" target="_blank" rel="noopener" style="color:var(--blue)">ফেসবুক পেজে মেসেজ দিন</a></p>' : "") +
+        '<p class="muted">অর্ডার ও পণ্যের তথ্যের জন্য কল করুন বা ফেসবুক পেজে মেসেজ দিন। পাইকারি ও কন্ট্রাক্টর অর্ডারের জন্য বিশেষ মূল্য দেওয়া হয়।</p></div>' +
       '<div class="card"><h3>মেসেজ পাঠান</h3><form id="msgForm">' +
         '<div class="field"><label for="m_name">নাম</label><input id="m_name" name="name" type="text" required></div>' +
         '<div class="field"><label for="m_phone">মোবাইল</label><input id="m_phone" name="phone" type="tel" required></div>' +
@@ -491,7 +494,7 @@
   views.policy = function () {
     return '<div class="card prose"><h1 class="page-title">রিটার্ন, রিফান্ড ও ওয়ারেন্টি নীতি</h1>' +
       "<h3>রিটার্ন</h3><p>পণ্য হাতে পাওয়ার ৭ দিনের মধ্যে ত্রুটিপূর্ণ, ভাঙা বা ভুল পণ্য ফেরত দিতে পারবেন। পণ্যটি অব্যবহৃত ও মূল প্যাকেটে থাকতে হবে। ডেলিভারিম্যানের সামনে পণ্য চেক করে নেওয়ার অনুরোধ রইল।</p>" +
-      "<h3>রিফান্ড</h3><p>রিটার্ন অনুমোদনের ৩-৫ কর্মদিবসের মধ্যে বিকাশ/নগদ/রকেট বা ব্যাংকে টাকা ফেরত দেওয়া হয়।</p>" +
+      "<h3>রিফান্ড</h3><p>রিটার্ন অনুমোদনের ৩-৫ কর্মদিবসের মধ্যে মোবাইল ব্যাংকিং বা ব্যাংকে টাকা ফেরত দেওয়া হয়।</p>" +
       "<h3>ওয়ারেন্টি</h3><p>প্রতিটি পণ্যের বিবরণে ওয়ারেন্টির মেয়াদ উল্লেখ আছে। ওয়ারেন্টি দাবির জন্য অর্ডার নম্বর বা রসিদ সংরক্ষণ করুন। ভুল ভোল্টেজ, পানি বা আগুনে ক্ষতিগ্রস্ত পণ্য ওয়ারেন্টির আওতায় পড়ে না।</p>" +
       "<h3>ডেলিভারি</h3><p>ঢাকার ভেতরে ১-২ দিন ও ঢাকার বাইরে ২-৪ কর্মদিবসে ডেলিভারি দেওয়া হয়। ডেলিভারি চার্জ: ঢাকায় " + money(S.delivery.insideDhaka) + ", ঢাকার বাইরে " + money(S.delivery.outsideDhaka) + "। " + money(S.delivery.freeAbove) + "+ অর্ডারে ফ্রি।</p></div>";
   };
@@ -719,11 +722,15 @@
 
   // ---------- শুরু ----------
   $$("[data-shop]").forEach(el => (el.textContent = S[el.dataset.shop] || ""));
+  $$("[data-optional]").forEach(el => (el.hidden = !S[el.dataset.optional]));
+  const fb = $("#fbLink");
+  if (S.facebook) fb.href = S.facebook; else fb.parentElement.hidden = true;
   ["#brandMark", "#brandMarkFooter"].forEach((sel, i) => {
     $(sel).innerHTML = S.logo ? '<img src="' + esc(S.logo) + '" alt="' + esc(S.nameEn) + '">' : logoSvg("m" + i);
   });
   $("#navCats").innerHTML = CATEGORIES.slice(0, 5).map(c => '<a href="#/shop?cat=' + c.id + '">' + esc(c.name) + "</a>").join("");
   $("#freeShipNote").textContent = money(S.delivery.freeAbove) + "+ অর্ডারে ফ্রি ডেলিভারি";
+  $(".pay-logos").textContent = PAYMENTS.map(m => m.name).join(" • ");
   $("#year").textContent = bn(new Date().getFullYear());
   $("#callFab").href = "tel:" + toEnDigits(S.phone).replace(/\D/g, "");
   render();
