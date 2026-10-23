@@ -14,13 +14,22 @@
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const catName = id => (CATEGORIES.find(c => c.id === id) || {}).name || "";
-  const discountPct = p => (p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0);
+  // দাম ০ মানে "দাম জানতে কল করুন" পণ্য
+  const onRequest = p => !(p.price > 0);
+  const available = p => onRequest(p) || p.stock > 0;
+  const discountPct = p => (!onRequest(p) && p.oldPrice > p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : 0);
+  const priceText = p => (onRequest(p) ? "দাম জানতে কল করুন" : money(p.price));
+  const telHref = () => "tel:" + toEnDigits(S.phone).replace(/\D/g, "");
   const validPhone = v => /^01[3-9]\d{8}$/.test(toEnDigits(v).replace(/[\s-]/g, "").replace(/^\+?88/, ""));
   const normPhone = v => toEnDigits(v).replace(/[\s-]/g, "").replace(/^\+?88/, "");
 
   function stars(r) {
     const full = Math.round(r);
     return '<span class="stars">' + "★".repeat(full) + "☆".repeat(5 - full) + "</span>";
+  }
+  function ratingLine(p, long) {
+    if (!p.reviews) return '<div class="rating">নতুন পণ্য</div>';
+    return '<div class="rating">' + stars(p.rating) + (long ? " " + bn(p.rating) + " · " + bn(p.reviews) + "টি রিভিউ" : " (" + bn(p.reviews) + ")") + "</div>";
   }
 
   function visual(p) {
@@ -56,7 +65,7 @@
     return '<article class="pcard">' +
       '<a href="#/product/' + esc(p.id) + '">' + visual(p) + "</a>" +
       '<div class="ptag">' +
-        (p.stock <= 0 ? '<span class="tag-out">স্টক আউট</span>' : "") +
+        (!available(p) ? '<span class="tag-out">স্টক আউট</span>' : "") +
         (off ? '<span class="tag-off">-' + bn(off) + "%</span>" : "") +
         (p.badge ? '<span class="tag-badge">' + esc(p.badge) + "</span>" : "") +
       "</div>" +
@@ -64,11 +73,13 @@
       '<div class="pbody">' +
         '<span class="pcat">' + esc(catName(p.cat)) + "</span>" +
         '<h3><a href="#/product/' + esc(p.id) + '">' + esc(p.name) + "</a></h3>" +
-        '<div class="rating">' + stars(p.rating) + " (" + bn(p.reviews) + ")</div>" +
-        '<div class="price"><b>' + money(p.price) + "</b>" + (p.oldPrice > p.price ? "<s>" + money(p.oldPrice) + "</s>" : "") + "</div>" +
-        (p.stock > 0
-          ? '<button class="btn btn-primary btn-sm" data-add="' + esc(p.id) + '">🛒 কার্টে যোগ করুন</button>'
-          : '<button class="btn btn-outline btn-sm" disabled>স্টকে নেই</button>') +
+        ratingLine(p) +
+        '<div class="price"><b' + (onRequest(p) ? ' class="ask"' : "") + ">" + priceText(p) + "</b>" + (discountPct(p) ? "<s>" + money(p.oldPrice) + "</s>" : "") + "</div>" +
+        (onRequest(p)
+          ? '<a class="btn btn-outline btn-sm" href="#/product/' + esc(p.id) + '">বিস্তারিত দেখুন</a>'
+          : p.stock > 0
+            ? '<button class="btn btn-primary btn-sm" data-add="' + esc(p.id) + '">🛒 কার্টে যোগ করুন</button>'
+            : '<button class="btn btn-outline btn-sm" disabled>স্টকে নেই</button>') +
       "</div></article>";
   }
 
@@ -84,7 +95,8 @@
   views.home = function () {
     const all = Store.products();
     const deals = all.filter(p => discountPct(p) > 0 && p.stock > 0).sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 8);
-    const popular = all.filter(p => p.stock > 0).slice().sort((a, b) => b.reviews - a.reviews).slice(0, 8);
+    const popular = all.filter(p => p.stock > 0 && p.reviews > 0).slice().sort((a, b) => b.reviews - a.reviews).slice(0, 8);
+    const fresh = all.filter(p => p.badge === "নতুন" && available(p)).slice(0, 4);
     return '<section class="hero">' +
         "<div>" +
           '<h1>মানসম্মত লাইট ও ইলেকট্রিক পণ্য <span class="hl">সাশ্রয়ী দামে</span></h1>' +
@@ -103,6 +115,7 @@
       '<section class="section"><div class="section-head"><h2>ক্যাটাগরি</h2><a href="#/shop">সব দেখুন →</a></div>' +
         '<div class="cat-grid">' + CATEGORIES.map(c => '<a class="cat-tile" href="#/shop?cat=' + c.id + '"><div class="ico">' + c.icon + "</div><span>" + esc(c.name) + "</span></a>").join("") + "</div>" +
       "</section>" +
+      (fresh.length ? '<section class="section"><div class="section-head"><h2>✨ নতুন কালেকশন</h2><a href="#/shop">সব দেখুন →</a></div><div class="grid">' + fresh.map(productCard).join("") + "</div></section>" : "") +
       (deals.length ? '<section class="section"><div class="section-head"><h2>🔥 আজকের অফার</h2><a href="#/shop?sale=1">সব অফার →</a></div><div class="grid">' + deals.map(productCard).join("") + "</div></section>" : "") +
       '<section class="section svc-banner">' +
         "<div><h2>⚡ লাইট-ফ্যান লাগাবেন বা ওয়্যারিং করাবেন?</h2><p>অভিজ্ঞ ইলেকট্রিশিয়ান আপনার বাসায় এসে কাজ করে দেবে — ইনস্টলেশন, রিপেয়ার ও সোলার সলিউশন।</p></div>" +
@@ -124,17 +137,17 @@
       (!cat || p.cat === cat) &&
       (!q || (p.name + " " + catName(p.cat) + " " + p.desc).toLowerCase().includes(q.toLowerCase())) &&
       (!min || p.price >= min) && (!max || p.price <= max) &&
-      (!inStock || p.stock > 0) && (!sale || discountPct(p) > 0)
+      (!inStock || available(p)) && (!sale || discountPct(p) > 0)
     );
     const sorters = {
       popular: (a, b) => b.reviews - a.reviews,
-      low: (a, b) => a.price - b.price,
-      high: (a, b) => b.price - a.price,
+      low: (a, b) => onRequest(a) - onRequest(b) || a.price - b.price,
+      high: (a, b) => onRequest(a) - onRequest(b) || b.price - a.price,
       rating: (a, b) => b.rating - a.rating,
       discount: (a, b) => discountPct(b) - discountPct(a)
     };
     list.sort(sorters[sort] || sorters.popular);
-    list.sort((a, b) => (b.stock > 0) - (a.stock > 0));
+    list.sort((a, b) => available(b) - available(a));
 
     const link = changes => {
       const p = new URLSearchParams(query);
@@ -201,12 +214,16 @@
         "<div>" +
           '<span class="muted">' + esc(catName(p.cat)) + "</span>" +
           "<h1>" + esc(p.name) + "</h1>" +
-          '<div class="rating">' + stars(p.rating) + " " + bn(p.rating) + " · " + bn(p.reviews) + "টি রিভিউ</div>" +
-          '<div class="price" style="margin:12px 0"><b>' + money(p.price) + "</b>" + (off ? "<s>" + money(p.oldPrice) + '</s><span class="tag-off" style="padding:2px 8px;border-radius:6px;font-size:13px">' + money(p.oldPrice - p.price) + " সাশ্রয়</span>" : "") + "</div>" +
-          (p.stock > 0 ? '<div class="stock-in">✔ স্টকে আছে' + (p.stock < 10 ? " (মাত্র " + bn(p.stock) + "টি বাকি)" : "") + "</div>" : '<div class="stock-out">✖ বর্তমানে স্টকে নেই</div>') +
+          ratingLine(p, true) +
+          '<div class="price" style="margin:12px 0"><b' + (onRequest(p) ? ' class="ask"' : "") + ">" + priceText(p) + "</b>" + (off ? "<s>" + money(p.oldPrice) + '</s><span class="tag-off" style="padding:2px 8px;border-radius:6px;font-size:13px">' + money(p.oldPrice - p.price) + " সাশ্রয়</span>" : "") + "</div>" +
+          (onRequest(p) ? '<div class="stock-in">📞 দাম ও স্টক জানতে কল বা মেসেজ করুন</div>'
+            : p.stock > 0 ? '<div class="stock-in">✔ স্টকে আছে' + (p.stock < 10 ? " (মাত্র " + bn(p.stock) + "টি বাকি)" : "") + "</div>" : '<div class="stock-out">✖ বর্তমানে স্টকে নেই</div>') +
           "<p>" + esc(p.desc) + "</p>" +
           '<ul class="features">' + (p.features || []).map(f => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
-          (p.stock > 0 ?
+          (onRequest(p) ?
+            '<div class="pd-actions"><a class="btn btn-primary" href="' + telHref() + '">📞 ' + esc(S.phone) + "</a>" +
+              (S.facebook ? '<a class="btn btn-yellow" href="' + esc(S.facebook) + '" target="_blank" rel="noopener">💬 ফেসবুকে মেসেজ দিন</a>' : "") + "</div>" :
+          p.stock > 0 ?
             '<div class="pd-actions">' +
               '<div class="qty"><button type="button" data-step="-1" aria-label="কমান">−</button><input id="qty" type="number" min="1" max="' + p.stock + '" value="1" aria-label="পরিমাণ"><button type="button" data-step="1" aria-label="বাড়ান">+</button></div>' +
               '<button class="btn btn-primary" id="addBtn">🛒 কার্টে যোগ করুন</button>' +
@@ -218,7 +235,8 @@
       "</div>" +
       '<div class="card section">' +
         '<div class="tabs"><button class="active" data-tab="t1">বিবরণ</button><button data-tab="t2">ডেলিভারি</button><button data-tab="t3">ইনস্টলেশন</button></div>' +
-        '<div id="t1"><p>' + esc(p.desc) + '</p><ul class="features">' + (p.features || []).map(f => "<li>" + esc(f) + "</li>").join("") + "</ul></div>" +
+        '<div id="t1"><p>' + esc(p.desc) + '</p><ul class="features">' + (p.features || []).map(f => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
+          (p.specs && p.specs.length ? '<h3 style="margin-top:20px">স্পেসিফিকেশন</h3><div class="table-wrap"><table class="specs">' + p.specs.map(([k, v]) => "<tr><th>" + esc(k) + "</th><td>" + esc(v) + "</td></tr>").join("") + "</table></div>" : "") + "</div>" +
         '<div id="t2" hidden><p>ঢাকার ভেতরে ডেলিভারি চার্জ ' + money(S.delivery.insideDhaka) + ", ঢাকার বাইরে " + money(S.delivery.outsideDhaka) + "। " + money(S.delivery.freeAbove) + " বা তার বেশি অর্ডারে ডেলিভারি ফ্রি। পণ্য হাতে পেয়ে চেক করে টাকা দিন।</p></div>" +
         '<div id="t3" hidden><p>এই পণ্যটি লাগাতে ইলেকট্রিশিয়ান লাগবে? আমাদের দক্ষ টিম আপনার বাসায় গিয়ে ইনস্টল করে দেবে।</p><a class="btn btn-primary btn-sm" href="#/services?service=install">ইনস্টলেশন বুক করুন</a></div>' +
       "</div>" +
@@ -573,7 +591,7 @@
     } else if (tab === "products") {
       body = '<div class="toolbar"><button class="btn btn-yellow" data-pedit="">＋ নতুন পণ্য যোগ করুন</button><button class="btn btn-outline btn-sm" id="resetProducts">ডিফল্ট পণ্যে ফিরে যান</button></div>' +
         '<div class="card table-wrap"><table><thead><tr><th>পণ্য</th><th>ক্যাটাগরি</th><th>দাম</th><th>স্টক</th><th></th></tr></thead><tbody>' +
-        products.map(p => "<tr><td>" + esc(p.emoji || "") + " " + esc(p.name) + "</td><td>" + esc(catName(p.cat)) + "</td><td>" + money(p.price) + '</td><td><input type="number" min="0" value="' + p.stock + '" data-pstock="' + esc(p.id) + '" style="width:90px"></td>' +
+        products.map(p => "<tr><td>" + esc(p.emoji || "") + " " + esc(p.name) + "</td><td>" + esc(catName(p.cat)) + "</td><td>" + (onRequest(p) ? "অনুরোধে" : money(p.price)) + '</td><td><input type="number" min="0" value="' + p.stock + '" data-pstock="' + esc(p.id) + '" style="width:90px"></td>' +
           '<td style="white-space:nowrap"><button class="btn btn-outline btn-sm" data-pedit="' + esc(p.id) + '">এডিট</button> <button class="btn btn-danger btn-sm" data-pdel="' + esc(p.id) + '">ডিলিট</button></td></tr>').join("") +
         "</tbody></table></div>";
     } else if (tab === "bookings") {
@@ -633,21 +651,23 @@
     const m = modal("<h2>" + (id ? "পণ্য এডিট করুন" : "নতুন পণ্য") + '</h2><form id="pForm">' +
       inp("name", "পণ্যের নাম *", "text", p.name) +
       '<div class="row2"><div class="field"><label>ক্যাটাগরি</label><select name="cat">' + CATEGORIES.map(c => '<option value="' + c.id + '"' + (c.id === p.cat ? " selected" : "") + ">" + esc(c.name) + "</option>").join("") + "</select></div>" + inp("stock", "স্টক", "number", p.stock) + "</div>" +
-      '<div class="row2">' + inp("price", "বিক্রয় মূল্য (৳) *", "number", p.price) + inp("oldPrice", "আগের মূল্য (৳, ঐচ্ছিক)", "number", p.oldPrice || "") + "</div>" +
+      '<div class="row2">' + inp("price", "বিক্রয় মূল্য (৳) — ০ দিলে \"দাম জানতে কল করুন\"", "number", p.price) + inp("oldPrice", "আগের মূল্য (৳, ঐচ্ছিক)", "number", p.oldPrice || "") + "</div>" +
       '<div class="row2">' + inp("emoji", "ইমোজি আইকন", "text", p.emoji) + inp("badge", "ব্যাজ (যেমন: নতুন)", "text", p.badge || "") + "</div>" +
       inp("image", "ছবির লিংক (ঐচ্ছিক)", "text", p.image || "") +
       '<div class="field"><label>বিবরণ</label><textarea name="desc" rows="3">' + esc(p.desc) + "</textarea></div>" +
       '<div class="field"><label>বৈশিষ্ট্য (প্রতি লাইনে একটি)</label><textarea name="features" rows="4">' + esc((p.features || []).join("\n")) + "</textarea></div>" +
+      '<div class="field"><label>স্পেসিফিকেশন (প্রতি লাইনে \"নাম: মান\", যেমন সাইজ: ১৭ × ৫০ সেমি)</label><textarea name="specs" rows="4">' + esc((p.specs || []).map(s => s[0] + ": " + s[1]).join("\n")) + "</textarea></div>" +
       '<p class="note-err" id="pErr"></p><button class="btn btn-primary">সেভ করুন</button></form>');
     $("#pForm", m.el).addEventListener("submit", e => {
       e.preventDefault();
       const fd = Object.fromEntries(new FormData(e.target));
       const price = Number(fd.price);
-      if (!fd.name.trim() || !(price > 0)) return ($("#pErr", m.el).textContent = "নাম ও সঠিক মূল্য দিন");
+      if (!fd.name.trim() || !(price >= 0) || fd.price === "") return ($("#pErr", m.el).textContent = "নাম ও মূল্য দিন (দাম জানতে কল করুন পণ্যের জন্য ০)");
       const data = {
         ...p, name: fd.name.trim(), cat: fd.cat, price, oldPrice: Number(fd.oldPrice) || 0, stock: Math.max(0, Math.floor(Number(fd.stock) || 0)),
         emoji: fd.emoji.trim() || "💡", badge: fd.badge.trim(), image: fd.image.trim(), desc: fd.desc.trim(),
-        features: fd.features.split("\n").map(s => s.trim()).filter(Boolean)
+        features: fd.features.split("\n").map(s => s.trim()).filter(Boolean),
+        specs: fd.specs.split("\n").map(s => s.split(/:(.*)/s).map(x => (x || "").trim())).filter(s => s[0] && s[1]).map(s => [s[0], s[1]])
       };
       const list = Store.products();
       if (id) Store.setProducts(list.map(x => (x.id === id ? data : x)));

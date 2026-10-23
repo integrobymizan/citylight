@@ -173,6 +173,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shado
 .price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .price b { font-size: 19px; color: var(--navy); }
 .price s { color: var(--muted); font-size: 14px; }
+.price b.ask { font-size: 15px; color: var(--blue-dark); }
+.pd .price b.ask { font-size: 22px; }
+.specs th { width: 38%; color: var(--muted); font-weight: 500; background: var(--bg); }
+.specs th, .specs td { border: 1px solid var(--line); }
 .pbody .btn { margin-top: auto; }
 
 /* ===== শপ পেজ ===== */

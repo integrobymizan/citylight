@@ -38,7 +38,7 @@
   function cart() { return load("cart", []); }
   function addToCart(id, qty) {
     const p = product(id);
-    if (!p || p.stock <= 0) return false;
+    if (!p || p.stock <= 0 || !(p.price > 0)) return false;
     const items = cart();
     const line = items.find(i => i.id === id);
     if (line) line.qty = Math.min(line.qty + (qty || 1), p.stock);
