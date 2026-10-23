@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>সিটি লাইটিং অ্যান্ড ইলেকট্রিক | City Lighting & Electric</title>
+  <meta name="description" content="এলইডি লাইট, ফ্যান, সুইচ, ক্যাবল, সার্কিট ব্রেকার ও সোলার পণ্যের অনলাইন শপ। ইনস্টলেশন, রিপেয়ার ও এনার্জি সলিউশন সার্ভিস। সারা বাংলাদেশে হোম ডেলিভারি।">
+  <meta name="theme-color" content="#0b1d3a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1d3a'/%3E%3Cpolygon points='24,56 33,36 27,36 40,14 37,31 44,31' fill='%23fbbf24'/%3E%3Ccircle cx='48' cy='14' r='6' fill='%23fde68a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <span>📞 হটলাইন: <b data-shop="phone"></b></span>
+      <span class="hide-sm">🚚 <span id="freeShipNote"></span></span>
+      <span class="hide-sm"><a href="#/track">📦 অর্ডার ট্র্যাক করুন</a></span>
+    </div>
+  </div>
+
+  <header class="header">
+    <div class="container header-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="মেনু">☰</button>
+      <a href="#/" class="brand" aria-label="হোম">
+        <span class="brand-mark" id="brandMark"></span>
+        <span class="brand-text">
+          <span class="brand-name">CITY LIGHTING</span>
+          <span class="brand-sub">&amp; ELECTRIC</span>
+        </span>
+      </a>
+      <form class="search" id="searchForm" role="search">
+        <input type="search" id="searchInput" placeholder="বাল্ব, ফ্যান, সুইচ, ক্যাবল খুঁজুন…" aria-label="পণ্য খুঁজুন">
+        <button type="submit" aria-label="খুঁজুন">🔍</button>
+      </form>
+      <nav class="header-actions">
+        <a href="#/account" class="icon-btn" aria-label="অ্যাকাউন্ট" title="অ্যাকাউন্ট">👤</a>
+        <a href="#/wishlist" class="icon-btn" aria-label="উইশলিস্ট" title="উইশলিস্ট">♡<span class="badge" id="wishCount"></span></a>
+        <a href="#/cart" class="icon-btn cart-btn" aria-label="কার্ট" title="কার্ট">🛒<span class="badge" id="cartCount"></span></a>
+      </nav>
+    </div>
+    <nav class="mainnav" id="mainNav">
+      <div class="container mainnav-inner">
+        <a href="#/">হোম</a>
+        <a href="#/shop">সব পণ্য</a>
+        <span id="navCats"></span>
+        <a href="#/services" class="nav-accent">⚡ ইলেকট্রিশিয়ান সার্ভিস</a>
+        <a href="#/track">অর্ডার ট্র্যাক</a>
+        <a href="#/contact">যোগাযোগ</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="app" class="container" tabindex="-1"></main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="#/" class="brand brand-footer">
+          <span class="brand-mark" id="brandMarkFooter"></span>
+          <span class="brand-text">
+            <span class="brand-name">CITY LIGHTING</span>
+            <span class="brand-sub">&amp; ELECTRIC</span>
+          </span>
+        </a>
+        <p class="muted-light">ইনস্টলেশন • রিপেয়ার • এনার্জি সলিউশন</p>
+        <p class="muted-light" data-shop="tagline"></p>
+      </div>
+      <div>
+        <h4>কেনাকাটা</h4>
+        <a href="#/shop">সব পণ্য</a>
+        <a href="#/cart">শপিং কার্ট</a>
+        <a href="#/wishlist">উইশলিস্ট</a>
+        <a href="#/track">অর্ডার ট্র্যাক</a>
+      </div>
+      <div>
+        <h4>সাহায্য</h4>
+        <a href="#/services">সার্ভিস বুকিং</a>
+        <a href="#/policy">রিটার্ন ও ওয়ারেন্টি নীতি</a>
+        <a href="#/contact">যোগাযোগ</a>
+        <a href="#/admin">অ্যাডমিন প্যানেল</a>
+      </div>
+      <div>
+        <h4>যোগাযোগ</h4>
+        <p>📍 <span data-shop="address"></span></p>
+        <p>📞 <span data-shop="phone"></span></p>
+        <p>✉️ <span data-shop="email"></span></p>
+        <p>🕙 <span data-shop="hours"></span></p>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year"></span> সিটি লাইটিং অ্যান্ড ইলেকট্রিক। সর্বস্বত্ব সংরক্ষিত।</span>
+      <span class="pay-logos">ক্যাশ অন ডেলিভারি • বিকাশ • নগদ • রকেট</span>
+    </div>
+  </footer>
+
+  <a class="call-fab" id="callFab" aria-label="কল করুন">📞</a>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
