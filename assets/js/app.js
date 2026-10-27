@@ -75,6 +75,7 @@
         '<h3><a href="#/product/' + esc(p.id) + '">' + esc(p.name) + "</a></h3>" +
         ratingLine(p) +
         '<div class="price"><b' + (onRequest(p) ? ' class="ask"' : "") + ">" + priceText(p) + "</b>" + (discountPct(p) ? "<s>" + money(p.oldPrice) + "</s>" : "") + "</div>" +
+        (discountPct(p) ? '<small class="save">সাশ্রয় ' + money(p.oldPrice - p.price) + "</small>" : "") +
         (onRequest(p)
           ? '<a class="btn btn-outline btn-sm" href="#/product/' + esc(p.id) + '">বিস্তারিত দেখুন</a>'
           : p.stock > 0
@@ -92,36 +93,115 @@
   // ---------- পেজসমূহ ----------
   const views = {};
 
+  // স্লাইডারের টাইমার — পেজ বদলালে বা আবার রেন্ডার হলে বন্ধ করা হয়
+  let sliderTimer = null;
+
+  // পণ্যের সারি: ৪টির বেশি হলে তীর চিহ্নসহ স্ক্রল হয়, কম হলে সাধারণ গ্রিড
+  function railSection(title, list, link) {
+    if (!list.length) return "";
+    const head = '<div class="section-head"><h2>' + title + '</h2><a href="' + link + '">সব দেখুন →</a></div>';
+    if (list.length <= 4) return '<section class="section">' + head + '<div class="grid">' + list.map(productCard).join("") + "</div></section>";
+    return '<section class="section">' + head +
+      '<div class="rail-wrap"><button class="rail-btn prev" type="button" aria-label="আগের পণ্য">‹</button>' +
+      '<div class="rail">' + list.map(productCard).join("") + "</div>" +
+      '<button class="rail-btn next" type="button" aria-label="পরের পণ্য">›</button></div></section>';
+  }
+
+  function listColumn(title, cat) {
+    const items = Store.products().filter(p => p.cat === cat && available(p)).slice(0, 4);
+    if (!items.length) return "";
+    return '<div class="card list-col"><div class="section-head"><h3>' + esc(title) + '</h3><a href="#/shop?cat=' + cat + '">সব দেখুন →</a></div>' +
+      items.map(p => '<a class="list-item" href="#/product/' + esc(p.id) + '">' + visual(p) +
+        '<div><small class="muted">' + esc(catName(p.cat)) + "</small><b>" + esc(p.name) + '</b><div class="price"><b' + (onRequest(p) ? ' class="ask"' : "") + ">" + priceText(p) + "</b>" + (discountPct(p) ? "<s>" + money(p.oldPrice) + "</s>" : "") + "</div></div></a>").join("") +
+      "</div>";
+  }
+
   views.home = function () {
     const all = Store.products();
-    const deals = all.filter(p => discountPct(p) > 0 && p.stock > 0).sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 8);
-    const popular = all.filter(p => p.stock > 0 && p.reviews > 0).slice().sort((a, b) => b.reviews - a.reviews).slice(0, 8);
-    const fresh = all.filter(p => p.badge === "নতুন" && available(p)).slice(0, 4);
-    return '<section class="hero">' +
-        "<div>" +
-          '<h1>মানসম্মত লাইট ও ইলেকট্রিক পণ্য <span class="hl">সাশ্রয়ী দামে</span></h1>' +
-          "<p>" + esc(S.tagline) + "</p>" +
-          '<div class="hero-tags"><span>⚡ ইনস্টলেশন</span><span>🔧 রিপেয়ার</span><span>☀️ এনার্জি সলিউশন</span></div>' +
-          '<div class="hero-actions"><a class="btn btn-yellow" href="#/shop">এখনই কিনুন →</a><a class="btn btn-outline" href="#/services">ইলেকট্রিশিয়ান বুক করুন</a></div>' +
-        "</div>" +
-        '<div class="hero-art">' + logoSvg("hero") + "</div>" +
-      "</section>" +
+    const byCat = (...cats) => all.filter(p => cats.includes(p.cat) && available(p));
+    const deals = all.filter(p => discountPct(p) > 0 && p.stock > 0).sort((a, b) => discountPct(b) - discountPct(a)).slice(0, 10);
+    const popular = all.filter(p => p.stock > 0 && p.reviews > 0).slice().sort((a, b) => b.reviews - a.reviews).slice(0, 10);
+    const fresh = all.filter(p => p.badge === "নতুন" && available(p)).slice(0, 8);
+    const slides = S.slides || [];
+    const promos = [
+      { t: "শক্তি সাশ্রয়ী আলো", s: "এলইডি বাল্ব ও প্যানেল", e: "💡", cat: "bulb" },
+      { t: "রুচিশীল সাজসজ্জা", s: "ঝাড়বাতি ও ওয়াল লাইট", e: "🪔", cat: "decor" },
+      { t: "আরামদায়ক বাতাস", s: "সিলিং ও রিচার্জেবল ফ্যান", e: "🌀", cat: "fan" },
+      { t: "নিরাপদ বিদ্যুৎ", s: "সুইচ, ক্যাবল ও ব্রেকার", e: "⚡", cat: "protection" }
+    ];
+    return (slides.length ?
+      '<section class="slider" aria-roledescription="carousel" aria-label="অফার ও নতুন পণ্য">' +
+        slides.map((s, i) => '<div class="slide tone-' + esc(s.tone || "navy") + '"' + (i ? " hidden" : "") + ' aria-roledescription="slide" aria-label="' + bn(i + 1) + " / " + bn(slides.length) + '">' +
+          '<div class="slide-text">' + (s.eyebrow ? '<span class="slide-eyebrow">' + esc(s.eyebrow) + "</span>" : "") +
+            (i ? "<h2>" : "<h1>") + esc(s.title) + (s.highlight ? ' <span class="hl">' + esc(s.highlight) + "</span>" : "") + (i ? "</h2>" : "</h1>") +
+            "<p>" + esc(s.text) + '</p><a class="btn btn-yellow" href="' + esc(s.link) + '">' + esc(s.cta) + " →</a></div>" +
+          '<div class="slide-art">' + (s.art === "logo" ? logoSvg("slide" + i) : '<span class="slide-emoji" aria-hidden="true">' + esc(s.art) + "</span>") + "</div>" +
+        "</div>").join("") +
+        (slides.length > 1 ?
+          '<button class="slider-btn prev" type="button" aria-label="আগের স্লাইড">‹</button><button class="slider-btn next" type="button" aria-label="পরের স্লাইড">›</button>' +
+          '<div class="slider-dots">' + slides.map((_, i) => '<button type="button" aria-label="স্লাইড ' + bn(i + 1) + '"' + (i ? "" : ' class="on"') + "></button>").join("") + "</div>" : "") +
+      "</section>" : "") +
+      (S.notice ? '<div class="notice" role="note"><div class="notice-track"><span>' + esc(S.notice) + '</span><span aria-hidden="true">' + esc(S.notice) + "</span></div></div>" : "") +
       '<section class="perks">' +
         '<div class="perk"><span class="ico">🚚</span><div><b>সারা দেশে ডেলিভারি</b><small>' + money(S.delivery.freeAbove) + "+ অর্ডারে ফ্রি</small></div></div>" +
         '<div class="perk"><span class="ico">💵</span><div><b>ক্যাশ অন ডেলিভারি</b><small>পণ্য হাতে পেয়ে টাকা দিন</small></div></div>' +
         '<div class="perk"><span class="ico">🛡️</span><div><b>মানসম্মত পণ্য</b><small>সাশ্রয়ী দাম, ওয়ারেন্টি সহ</small></div></div>' +
         '<div class="perk"><span class="ico">🏢</span><div><b>হোম ও কমার্শিয়াল</b><small>বাসা, অফিস ও দোকানের সমাধান</small></div></div>' +
       "</section>" +
+      (S.hours && S.address ?
+        '<section class="section showroom"><div class="showroom-time">🕙 ' + esc(S.hours) + '</div><div><b>আমাদের শোরুমে আসুন</b><br>' + esc(S.address) + "</div></section>" : "") +
       '<section class="section"><div class="section-head"><h2>ক্যাটাগরি</h2><a href="#/shop">সব দেখুন →</a></div>' +
         '<div class="cat-grid">' + CATEGORIES.map(c => '<a class="cat-tile" href="#/shop?cat=' + c.id + '"><div class="ico">' + c.icon + "</div><span>" + esc(c.name) + "</span></a>").join("") + "</div>" +
       "</section>" +
-      (fresh.length ? '<section class="section"><div class="section-head"><h2>✨ নতুন কালেকশন</h2><a href="#/shop">সব দেখুন →</a></div><div class="grid">' + fresh.map(productCard).join("") + "</div></section>" : "") +
-      (deals.length ? '<section class="section"><div class="section-head"><h2>🔥 আজকের অফার</h2><a href="#/shop?sale=1">সব অফার →</a></div><div class="grid">' + deals.map(productCard).join("") + "</div></section>" : "") +
+      '<section class="section promo-grid">' + promos.map(p => '<a class="promo" href="#/shop?cat=' + p.cat + '"><span class="promo-emoji" aria-hidden="true">' + p.e + "</span><b>" + p.t + "</b><small>" + p.s + "</small></a>").join("") + "</section>" +
+      railSection("✨ নতুন কালেকশন", fresh, "#/shop") +
+      railSection("⚡ ফ্ল্যাশ ডিল", deals, "#/shop?sale=1&sort=discount") +
+      railSection("🪔 ঝাড়বাতি ও ডেকোরেটিভ লাইট", byCat("decor"), "#/shop?cat=decor") +
+      railSection("🌀 ফ্যান কালেকশন", byCat("fan"), "#/shop?cat=fan") +
+      '<section class="section duo">' +
+        '<a class="duo-banner tone-blue" href="#/shop?cat=panel"><div><small>বাসা ও অফিসের জন্য</small><b>টিউব ও প্যানেল লাইট</b><span class="btn btn-yellow btn-sm">দেখুন →</span></div><span class="duo-emoji" aria-hidden="true">🔆</span></a>' +
+        '<a class="duo-banner tone-gold" href="#/shop?cat=backup"><div><small>লোডশেডিংয়ের সমাধান</small><b>সোলার ও ইমার্জেন্সি লাইট</b><span class="btn btn-yellow btn-sm">দেখুন →</span></div><span class="duo-emoji" aria-hidden="true">☀️</span></a>' +
+      "</section>" +
+      railSection("💡 এলইডি বাল্ব", byCat("bulb"), "#/shop?cat=bulb") +
+      '<section class="section list-cols">' + listColumn("সুইচ ও সকেট", "switch") + listColumn("সার্কিট ব্রেকার ও ডিবি", "protection") + listColumn("তার ও ক্যাবল", "cable") + "</section>" +
       '<section class="section svc-banner">' +
         "<div><h2>⚡ লাইট-ফ্যান লাগাবেন বা ওয়্যারিং করাবেন?</h2><p>অভিজ্ঞ ইলেকট্রিশিয়ান আপনার বাসায় এসে কাজ করে দেবে — ইনস্টলেশন, রিপেয়ার ও সোলার সলিউশন।</p></div>" +
         '<a class="btn btn-yellow" href="#/services">সার্ভিস বুক করুন</a>' +
       "</section>" +
-      '<section class="section"><div class="section-head"><h2>⭐ জনপ্রিয় পণ্য</h2><a href="#/shop?sort=popular">আরও দেখুন →</a></div><div class="grid">' + popular.map(productCard).join("") + "</div></section>";
+      railSection("⭐ জনপ্রিয় পণ্য", popular, "#/shop?sort=popular");
+  };
+  views.home.mount = function () {
+    $$(".rail-wrap").forEach(w => {
+      const rail = $(".rail", w);
+      const prev = $(".prev", w), next = $(".next", w);
+      const sync = () => {
+        prev.disabled = rail.scrollLeft < 4;
+        next.disabled = rail.scrollLeft + rail.clientWidth > rail.scrollWidth - 4;
+      };
+      prev.addEventListener("click", () => rail.scrollBy({ left: -rail.clientWidth, behavior: "smooth" }));
+      next.addEventListener("click", () => rail.scrollBy({ left: rail.clientWidth, behavior: "smooth" }));
+      rail.addEventListener("scroll", sync, { passive: true });
+      sync();
+    });
+
+    const slides = $$(".slide");
+    if (slides.length < 2) return;
+    const dots = $$(".slider-dots button");
+    let at = 0;
+    const show = i => {
+      at = (i + slides.length) % slides.length;
+      slides.forEach((s, k) => (s.hidden = k !== at));
+      dots.forEach((d, k) => d.classList.toggle("on", k === at));
+    };
+    const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const start = () => { clearInterval(sliderTimer); if (!reduce) sliderTimer = setInterval(() => show(at + 1), 5000); };
+    $(".slider .prev").addEventListener("click", () => { show(at - 1); start(); });
+    $(".slider .next").addEventListener("click", () => { show(at + 1); start(); });
+    dots.forEach((d, k) => d.addEventListener("click", () => { show(k); start(); }));
+    const slider = $(".slider");
+    slider.addEventListener("mouseenter", () => clearInterval(sliderTimer));
+    slider.addEventListener("mouseleave", start);
+    start();
   };
 
   views.shop = function (_, query) {
@@ -686,6 +766,7 @@
   let lastPath = null;
 
   function render() {
+    clearInterval(sliderTimer);
     const { parts, query } = parseHash();
     const name = parts[0] || "home";
     const view = views[name] || views.notfound;
@@ -752,6 +833,9 @@
   $("#freeShipNote").textContent = money(S.delivery.freeAbove) + "+ অর্ডারে ফ্রি ডেলিভারি";
   $(".pay-logos").textContent = PAYMENTS.map(m => m.name).join(" • ");
   $("#year").textContent = bn(new Date().getFullYear());
-  $("#callFab").href = "tel:" + toEnDigits(S.phone).replace(/\D/g, "");
+  $("#fabStack").innerHTML =
+    (S.whatsapp ? '<a class="fab fab-wa" href="https://wa.me/' + toEnDigits(S.whatsapp).replace(/\D/g, "").replace(/^0/, "880") + '" target="_blank" rel="noopener" aria-label="হোয়াটসঅ্যাপে মেসেজ দিন" title="হোয়াটসঅ্যাপ">🟢</a>' : "") +
+    (S.facebook ? '<a class="fab fab-fb" href="' + esc(S.facebook) + '" target="_blank" rel="noopener" aria-label="ফেসবুক পেজে মেসেজ দিন" title="ফেসবুক মেসেজ">💬</a>' : "") +
+    '<a class="fab fab-call" href="' + telHref() + '" aria-label="কল করুন" title="কল করুন">📞</a>';
   render();
 })();
